@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hindari DC - Game Bang Sahlul</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            user-select: none;
+            overflow: hidden;
+        }
+        h1 { color: #e74c3c; text-shadow: 2px 2px 4px black; font-size: 20px; }
+        #gameArea {
+            width: 300px;
+            height: 500px;
+            background: #34495e;
+            border: 3px solid #e74c3c;
+            margin: 10px auto;
+            position: relative;
+            overflow: hidden;
+        }
+        #player {
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            position: absolute;
+            bottom: 20px;
+            left: 130px;
+            border-radius: 50%;
+            transition: left 0.1s;
+            z-index: 10;
+        }
+        #player::before {
+            content: '🏃';
+            font-size: 30px;
+            position: absolute;
+            top: -2px;
+            left: 5px;
+        }
+        .dc {
+            width: 40px;
+            height: 40px;
+            background: #c0392b;
+            position: absolute;
+            border-radius: 5px;
+            z-index: 5;
+        }
+        .dc::before {
+            content: '👨‍💼';
+            font-size: 30px;
+            position: absolute;
+            top: -2px;
+            left: 5px;
+        }
+        #controls {
+            width: 300px;
+            margin: 10px auto;
+            display: flex;
+            justify-content: space-between;
+        }
+        .btn {
+            width: 140px;
+            height: 60px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        #info { font-size: 16px; }
+        #startBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 10px;
+        }
+        #jalan {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                #34495e,
+                #34495e 40px,
+                #2c3e50 40px,
+                #2c3e50 80px
+            );
+            animation: jalan 0.5s linear infinite;
+        }
+        @keyframes jalan {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 80px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>💸 HINDARI DEBT COLLECTOR 💸</h1>
+    <div id="info">Ketabrak: <span id="nyawa">0</span>/3 | Skor: <span id="skor">0</span>m</div>
+    <div id="gameArea">
+        <div id="jalan"></div>
+        <div id="player"></div>
+    </div>
+    <div id="controls">
+        <button class="btn" ontouchstart="gerak('kiri')" onclick="gerak('kiri')">◀ KIRI</button>
+        <button class="btn" ontouchstart="gerak('kanan')" onclick="gerak('kanan')">KANAN ▶</button>
+    </div>
+    <button id="startBtn" onclick="mulaiGame()">LARI DARI KENYATAAN</button>
+    <p style="margin-top:10px; font-size:12px;">Game by Bang Sahlul © 2026</p>
+
+    <script>
+        let player = document.getElementById('player');
+        let gameArea = document.getElementById('gameArea');
+        let x = 130, nyawa = 0, skor = 0, gameJalan = false;
+        let kecepatanGame = 3, spawnRate = 1500;
+        let timerGame, timerDC, timerSkor;
+
+        function mulaiGame() {
+            x = 130; nyawa = 0; skor = 0; gameJalan = true; kecepatanGame = 3; spawnRate = 1500;
+            player.style.left = x + 'px';
+            document.getElementById('nyawa').textContent = nyawa;
+            document.getElementById('skor').textContent = skor;
+            document.getElementById('startBtn').style.display = 'none';
+            
+            // Hapus DC lama
+            document.querySelectorAll('.dc').forEach(dc => dc.remove());
+            
+            // Timer skor + naikin susah
+            timerSkor = setInterval(() => {
+                if (!gameJalan) return;
+                skor++;
+                document.getElementById('skor').textContent = skor;
+                if (skor % 10 === 0) {
+                    kecepatanGame += 0.3;
+                    if (spawnRate > 600) spawnRate -= 50;
+                    clearInterval(timerDC);
+                    spawnDC();
+                }
+            }, 100);
+            
+            spawnDC();
+            updateGame();
+        }
+
+        function gerak(arah) {
+            if (!gameJalan) return;
+            if (arah === 'kiri' && x > 0) x -= 45;
+            if (arah === 'kanan' && x < 260) x += 45;
+            player.style.left = x + 'px';
+        }
+
+        function spawnDC() {
+            if (!gameJalan) return;
+            let dc = document.createElement('div');
+            dc.className = 'dc';
+            dc.style.left = Math.floor(Math.random() * 7) * 45 + 'px';
+            dc.style.top = '-50px';
+            gameArea.appendChild(dc);
+            
+            timerDC = setTimeout(spawnDC, spawnRate);
+        }
+
+        function updateGame() {
+            if (!gameJalan) return;
+            
+            document.querySelectorAll('.dc').forEach(dc => {
+                let top = parseInt(dc.style.top) || 0;
+                top += kecepatanGame;
+                dc.style.top = top + 'px';
+                
+                // Cek nabrak
+                if (top > 420 && top < 480) {
+                    let dcX = parseInt(dc.style.left);
+                    if (x < dcX + 40 && x + 40 > dcX) {
+                        nabrak(dc);
+                    }
+                }
+                
+                // Hapus kalo lewat
+                if (top > 500) dc.remove();
+            });
+            
+            requestAnimationFrame(updateGame);
+        }
+        
+        function nabrak(dc) {
+            dc.remove();
+            nyawa++;
+            document.getElementById('nyawa').textContent = nyawa;
+            navigator.vibrate(200);
+            if (nyawa >= 3) gameOver();
+        }
+
+        function gameOver() {
+            gameJalan = false;
+            clearInterval(timerGame);
+            clearInterval(timerDC);
+            clearInterval(timerSkor);
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('startBtn').textContent = 'CICIL ULANG';
+            alert('YAHHH KETANGKEP DC BANG! 😭\nMotor ditarik! Skor Lari: ' + skor + 'm\n\nTips: Jangan ngutang bang 😂');
+        }
+        
+        // Kontrol keyboard buat tes di PC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') gerak('kiri');
+            if (e.key === 'ArrowRight') gerak('kanan');
+        });
+    </script>
+</body>
+</html>
